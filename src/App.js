@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import firebase from "./firebase";
 import "./App.css";
 import { Error, Code, Email, Phone, Save, Grade } from "@material-ui/icons";
 import Board from "./components/Board";
+import FlipCounter from "./components/FlipCounter";
+import Scoreboard from "./components/ScoreBoard";
+
+const db = firebase.firestore();
 
 const data = [
   { id: 0, cardName: 0, flipped: false, pairFound: false, icon: <Error /> },
@@ -19,10 +24,35 @@ const data = [
 ];
 
 export default function App() {
+  const [showScoreboard, setShowscoreboard] = useState(false);
   const [flipCount, setFlipCount] = useState(0);
   const [isClickDisabled, setIsClickDisabled] = useState(false);
   const [message, setMessage] = useState(null);
   const [lastTurnedCard, setLastTurnedCard] = useState({});
+  const [highScores, setHighScores] = useState([]);
+  const [newScore, setNewScore] = useState(null);
+
+  useEffect(() => {
+    db.collection("highScores")
+      .orderBy("score", "asc")
+      .onSnapshot(snapshot => {
+        setHighScores(snapshot.docs);
+      });
+  }, []);
+
+  const handleSaveNewScore = (name, score) => {
+    console.log(name, score);
+    db.collection("highScores")
+      .add({
+        date: new Date(),
+        name: name,
+        score: score
+      })
+      .then(() => {
+        setFlipCount(0);
+      });
+  };
+
   const shuffle = arr => {
     var i, j, temp;
     for (i = arr.length - 1; i > 0; i--) {
@@ -72,11 +102,12 @@ export default function App() {
         if (cards.every(hasAllFound)) {
           // CHECK IF ALL PAIRS HAVE BEEN FOUND
           setTimeout(() => {
-            handleShowMessage(`You finished with ${flipCount} flips`);
+            handleShowMessage(`You finished with ${flipCount + 1} flips`);
             setTimeout(() => {
-              resetGame();
+              //resetGame();
               setIsClickDisabled(false); // ENABLE CLICK EVENTS FOR BOARD
-              setFlipCount(0);
+              setNewScore(flipCount);
+              setShowscoreboard(true);
             }, 2000);
           }, 1000);
         }
@@ -105,7 +136,13 @@ export default function App() {
 
   return (
     <div className="App">
-      <div className="Flip-counter">{`Flip count : ${flipCount}`}</div>
+      <FlipCounter flipCount={flipCount} />
+      <button
+        className="Button Scoreboard-btn"
+        onClick={() => setShowscoreboard(true)}
+      >
+        HIGH SCORES
+      </button>
       <div
         className={`Info-message`}
         style={{
@@ -121,6 +158,17 @@ export default function App() {
       >
         <Board cards={cards} handleFlipCard={handleFlipCard} />
       </div>
+      <Scoreboard
+        highScores={highScores}
+        showScoreboard={showScoreboard}
+        setShowscoreboard={setShowscoreboard}
+        setNewScore={setNewScore}
+        flipCount={flipCount}
+        setFlipCount={setFlipCount}
+        handleSaveNewScore={handleSaveNewScore}
+        newScore={newScore}
+        resetGame={resetGame}
+      />
     </div>
   );
 }
