@@ -41,6 +41,7 @@ export default function App() {
 
   const resetGame = () => {
     for (var i = 0; i < cards.length; i++) {
+      setFlipCount(0);
       cards[i].flipped = false;
       cards[i].pairFound = false;
       setCards([...cards]);
@@ -78,8 +79,8 @@ export default function App() {
             setTimeout(() => {
               resetGame();
               setIsClickDisabled(false); // ENABLE CLICK EVENTS FOR BOARD
-            }, 2000);
-          }, 1000);
+            }, 4000);
+          }, 5000);
         }
         setLastTurnedCard({});
       } else {
